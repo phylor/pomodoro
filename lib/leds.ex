@@ -21,7 +21,9 @@ defmodule Leds do
     work_pids = Enum.map(work_pins, create_output)
     break_pids = Enum.map(break_pins, create_output)
 
-    {:ok, %{work_pins: work_pins, work_pids: work_pids, break_pids: break_pids, light_index: 0, next_light_timer: nil, blink_state: 0, blink_timer: nil, cycle: 1, nightrider_index: 0, nightrider_timer: nil, nightrider_step: 1}}
+    Nightrider.start_link(break_pids)
+
+    {:ok, %{work_pins: work_pins, work_pids: work_pids, break_pids: break_pids, light_index: 0, next_light_timer: nil, blink_state: 0, blink_timer: nil, cycle: 1}}
   end
 
   def turn_on do
@@ -52,33 +54,31 @@ defmodule Leds do
 
   def handle_cast(:turn_off, state) do
     Logger.info("Turning off work lights")
-    Enum.each(state[:work_pids], fn pid ->
+
+    Enum.each(state.work_pids, fn pid ->
       GPIO.write(pid, 0)
     end)
 
-    if state[:next_light_timer] do
-      Logger.info("Canceling timer")
-      Process.cancel_timer(state[:next_light_timer])
+    if state.next_light_timer do
+      Process.cancel_timer(state.next_light_timer)
     end
-    if state[:blink_timer] do
-      Process.cancel_timer(state[:blink_timer])
+    if state.blink_timer do
+      Process.cancel_timer(state.blink_timer)
     end
-    if state[:nightrider_timer] do
-      Process.cancel_timer(state[:nightrider_timer])
-    end
+    Nightrider.stop()
 
     {:noreply, %{state | light_index: 0, next_light_timer: nil}}
   end
 
   def handle_cast(:break_on, state) do
     Logger.info("Turning on break light")
-    current_break_pids = Enum.slice(state[:break_pids], Range.new(0, state[:cycle] - 1))
+    current_break_pids = Enum.slice(state.break_pids, Range.new(0, state.cycle - 1))
 
-    if state[:cycle] == 5 do
+    if state.cycle == 5 do
       # Nightrider
-      GenServer.cast(self(), :nightrider_start)
+      Nightrider.start()
     else
-      Enum.each(current_break_pids, fn pid ->                                                              
+      Enum.each(current_break_pids, fn pid ->
         GPIO.write(pid, 1)
       end)
     end
@@ -88,56 +88,29 @@ defmodule Leds do
 
   def handle_cast(:break_off, state) do
     Logger.info("Turning off break light")
-    Enum.map(state[:break_pids], fn pid ->
+    Enum.map(state.break_pids, fn pid ->
       GPIO.write(pid, 0)
     end)
-    if state[:nightrider_timer] do
-      Process.cancel_timer(state[:nightrider_timer])
-    end
+
+    Nightrider.stop()
 
     {:noreply, state}
   end
 
   def handle_cast(:finish_cycle, state) do
-    if state[:cycle] < 5 do
-      {:noreply, %{state | cycle: state[:cycle] + 1}}
+    if state.cycle < 5 do
+      {:noreply, %{state | cycle: state.cycle + 1}}
     else
       {:noreply, %{state | cycle: 1}}
     end
   end
 
-  def handle_cast(:nightrider_start, state) do
-    nightrider_timer = Process.send_after(self(), :nightrider_step, 100)
-
-    {:noreply, %{state | nightrider_index: 0, nightrider_timer: nightrider_timer}}
-  end
-
-  def handle_info(:nightrider_step, state) do
-    previous_pid = Enum.at(state[:break_pids], state[:nightrider_index] - state[:nightrider_step])
-    current_pid = Enum.at(state[:break_pids], state[:nightrider_index])
-
-    GPIO.write(previous_pid, 0)
-    GPIO.write(current_pid, 1)
-
-    nightrider_timer = Process.send_after(self(), :nightrider_step, 100)
-
-    nightrider_step = cond do
-                        state[:nightrider_index] >= 4 -> -1
-                        state[:nightrider_index] <= 0 -> 1
-                        true -> state[:nightrider_step]
-                      end
-
-    nightrider_index = state[:nightrider_index] + nightrider_step
-
-    {:noreply, %{state | nightrider_index: nightrider_index, nightrider_step: nightrider_step, nightrider_timer: nightrider_timer}}
-  end
-
   def handle_info(:next_light, state) do
-    light_index = state[:light_index] + 1
+    light_index = state.light_index + 1
     Logger.info("Turning on work light #{light_index}")
-    GPIO.write(Enum.at(state[:work_pids], light_index), 1)
-    if state[:blink_timer] do
-      Process.cancel_timer(state[:blink_timer])
+    GPIO.write(Enum.at(state.work_pids, light_index), 1)
+    if state.blink_timer do
+      Process.cancel_timer(state.blink_timer)
     end
     blink_timer = Process.send_after(self(), :blink, 200)
 
@@ -151,10 +124,10 @@ defmodule Leds do
   end
 
   def handle_info(:blink, state) do
-    GPIO.write(Enum.at(state[:work_pids], state[:light_index]), state[:blink_state])
+    GPIO.write(Enum.at(state.work_pids, state.light_index), state.blink_state)
     blink_timer = Process.send_after(self(), :blink, 200)
 
-    blink_state = if state[:blink_state] == 1 do
+    blink_state = if state.blink_state == 1 do
                     0
                   else
                     1

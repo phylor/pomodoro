@@ -3,8 +3,13 @@ defmodule PomodoroTimer do
 
   require Logger
 
-  @work_interval 5000
-  @break_interval 5000
+  if System.get_env("REAL_TIME") do
+    @work_interval 25 * 60 * 1000
+    @break_interval 5 * 60 * 1000
+  else
+    @work_interval 5 * 1000
+    @break_interval 5 * 1000
+  end
 
   def start_link do
     Leds.start_link()
@@ -27,22 +32,24 @@ defmodule PomodoroTimer do
     Logger.info("Button pressed")
     current_click = :os.system_time(:milli_seconds)
 
-    if state[:last_click] + 1000 < current_click do
+    if state.last_click + 1000 < current_click do
       case state[:pomodoro_status] do
         :reset ->
           working_timer = start_working()
 
           {:noreply, %{state | pomodoro_status: :working, last_click: :os.system_time(:milli_seconds), working_timer: working_timer, breaking_timer: nil}}
         :working ->
-          if state[:working_timer] do
-            Process.cancel_timer(state[:working_timer])
+
+          if state.working_timer do
+            Process.cancel_timer(state.working_timer)
           end
 
           breaking_timer = start_breaking()
 
           {:noreply, %{state | pomodoro_status: :breaking, last_click: :os.system_time(:milli_seconds), breaking_timer: breaking_timer, working_timer: nil}}
         :breaking ->
-          if state[:breaking_timer] do
+
+          if state.breaking_timer do
             Process.cancel_timer(state[:breaking_timer])
           end
 
