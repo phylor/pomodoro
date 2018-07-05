@@ -21,7 +21,7 @@ defmodule Leds do
     work_pids = Enum.map(work_pins, create_output)
     break_pids = Enum.map(break_pins, create_output)
 
-    {:ok, %{work_pins: work_pins, work_pids: work_pids, break_pids: break_pids, light_index: 0, next_light_timer: nil, blink_state: 0, blink_timer: nil}}
+    {:ok, %{work_pins: work_pins, work_pids: work_pids, break_pids: break_pids, light_index: 0, next_light_timer: nil, blink_state: 0, blink_timer: nil, cycle: 1}}
   end
 
   def turn_on do
@@ -45,11 +45,6 @@ defmodule Leds do
   end
 
   def handle_cast(:turn_on, state) do
-    #first_light = Enum.at(state[:work_pids], 0)
-    #Logger.info("Turning on work light 0")
-    #GPIO.write(first_light, 1)
-
-    #next_light_timer = Process.send_after(self(), :next_light, light_interval())
     Process.send_after(self(), :next_light, 0)
 
     {:noreply, %{state | light_index: -1, next_light_timer: nil}}
@@ -73,19 +68,31 @@ defmodule Leds do
   end
 
   def handle_cast(:break_on, state) do
-    [first_break_pid | _] = state[:break_pids]
     Logger.info("Turning on break light")
-    GPIO.write(first_break_pid, 1)
+    current_break_pids = Enum.slice(state[:break_pids], Range.new(0, state[:cycle] - 1))
+
+    Enum.each(current_break_pids, fn pid ->                                                              
+      GPIO.write(pid, 1)
+    end)
 
     {:noreply, state}
   end
 
   def handle_cast(:break_off, state) do
-    [first_break_pid | _] = state[:break_pids]
     Logger.info("Turning off break light")
-    GPIO.write(first_break_pid, 0)
+    Enum.map(state[:break_pids], fn pid ->
+      GPIO.write(pid, 0)
+    end)
 
     {:noreply, state}
+  end
+
+  def handle_cast(:finish_cycle, state) do
+    if state[:cycle] < 5 do
+      {:noreply, %{state | cycle: state[:cycle] + 1}}
+    else
+      {:noreply, %{state | cycle: 1}}
+    end
   end
 
   def handle_info(:next_light, state) do
@@ -117,5 +124,9 @@ defmodule Leds do
                   end
 
     {:noreply, %{state | blink_state: blink_state, blink_timer: blink_timer}}
+  end
+
+  def finish_cycle do
+    GenServer.cast(__MODULE__, :finish_cycle)
   end
 end
