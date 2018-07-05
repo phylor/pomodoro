@@ -22,8 +22,8 @@ defmodule Pomodoro.Application do
     {:ok, input_pid} = GPIO.start_link(@input_pin, :input)
     spawn(fn -> listen_forever(input_pid) end)
 
-    #opts = [strategy: :one_for_one, name: Pomodoro.Supervisor]
-    #Supervisor.start_link(children(@target), opts)
+    # opts = [strategy: :one_for_one, name: Pomodoro.Supervisor]
+    # Supervisor.start_link(children(@target), opts)
   end
 
   # List all child processes to be supervised

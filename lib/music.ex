@@ -22,9 +22,9 @@ defmodule Music do
     Pigpiox.Waveform.add_generic(pulses)
 
     {:ok, wave_id} = Pigpiox.Waveform.create()
-    
+
     Pigpiox.GPIO.set_mode(@output_pin, :output)
-        
+
     Pigpiox.Waveform.repeat(wave_id)
 
     Process.send_after(self(), :stop_tone, duration_millis)

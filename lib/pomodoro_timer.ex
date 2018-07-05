@@ -13,9 +13,14 @@ defmodule PomodoroTimer do
 
   def start_link do
     Leds.start_link()
-    #Music.start_link()
-    GenServer.start_link(__MODULE__, %{pomodoro_status: :reset, last_click: 0, working_timer: nil, breaking_timer: nil}, name: __MODULE__)
-    #Music.play_tone(2200, 1000)
+    # Music.start_link()
+    GenServer.start_link(
+      __MODULE__,
+      %{pomodoro_status: :reset, last_click: 0, working_timer: nil, breaking_timer: nil},
+      name: __MODULE__
+    )
+
+    # Music.play_tone(2200, 1000)
   end
 
   def init(state) do
@@ -37,18 +42,32 @@ defmodule PomodoroTimer do
         :reset ->
           working_timer = start_working()
 
-          {:noreply, %{state | pomodoro_status: :working, last_click: :os.system_time(:milli_seconds), working_timer: working_timer, breaking_timer: nil}}
-        :working ->
+          {:noreply,
+           %{
+             state
+             | pomodoro_status: :working,
+               last_click: :os.system_time(:milli_seconds),
+               working_timer: working_timer,
+               breaking_timer: nil
+           }}
 
+        :working ->
           if state.working_timer do
             Process.cancel_timer(state.working_timer)
           end
 
           breaking_timer = start_breaking()
 
-          {:noreply, %{state | pomodoro_status: :breaking, last_click: :os.system_time(:milli_seconds), breaking_timer: breaking_timer, working_timer: nil}}
-        :breaking ->
+          {:noreply,
+           %{
+             state
+             | pomodoro_status: :breaking,
+               last_click: :os.system_time(:milli_seconds),
+               breaking_timer: breaking_timer,
+               working_timer: nil
+           }}
 
+        :breaking ->
           if state.breaking_timer do
             Process.cancel_timer(state[:breaking_timer])
           end
@@ -56,6 +75,7 @@ defmodule PomodoroTimer do
           start_resetting()
 
           {:noreply, %{state | pomodoro_status: :reset, breaking_timer: nil, working_timer: nil}}
+
         _ ->
           {:noreply, state}
       end
@@ -67,7 +87,8 @@ defmodule PomodoroTimer do
   def handle_info(:start_break, state) do
     breaking_timer = start_breaking()
 
-    {:noreply, %{state | pomodoro_status: :breaking, breaking_timer: breaking_timer, working_timer: nil}}
+    {:noreply,
+     %{state | pomodoro_status: :breaking, breaking_timer: breaking_timer, working_timer: nil}}
   end
 
   def handle_info(:stop_break, state) do
