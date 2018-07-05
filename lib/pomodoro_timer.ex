@@ -3,8 +3,8 @@ defmodule PomodoroTimer do
 
   require Logger
 
-  @work_interval 5000
-  @break_interval 3000
+  @work_interval 25000
+  @break_interval 5000
 
   def start_link do
     Leds.start_link()
