@@ -21,7 +21,7 @@ defmodule Leds do
     work_pids = Enum.map(work_pins, create_output)
     break_pids = Enum.map(break_pins, create_output)
 
-    {:ok, %{work_pids: work_pids, break_pids: break_pids, light_index: 0}}
+    {:ok, %{work_pids: work_pids, break_pids: break_pids, light_index: 0, next_light_timer: nil}}
   end
 
   def turn_on do
@@ -43,9 +43,10 @@ defmodule Leds do
   def handle_cast(:turn_on, state) do
     first_light = Enum.at(state[:work_pids], 0)
     GPIO.write(first_light, 1)
-    Process.send_after(self(), :next_light, 1000)
 
-    {:noreply, %{state | light_index: 1}}
+    next_light_timer = Process.send_after(self(), :next_light, 1000)
+
+    {:noreply, %{state | light_index: 1, next_light_timer: next_light_timer}}
   end
 
   def handle_cast(:turn_off, state) do
@@ -53,7 +54,11 @@ defmodule Leds do
       GPIO.write(pid, 0)
     end)
 
-    {:noreply, %{state | light_index: 0}}
+    if state[:next_light_timer] do
+      Process.cancel_timer(state[:next_light_timer])
+    end
+
+    {:noreply, %{state | light_index: 0, next_light_timer: nil}}
   end
 
   def handle_cast(:break_on, state) do
@@ -72,14 +77,15 @@ defmodule Leds do
 
   def handle_info(:next_light, state) do
     GPIO.write(Enum.at(state[:work_pids], state[:light_index]), 1)
+    next_light_timer = state[:next_light_timer]
 
     light_index = if state[:light_index] < 4 do
-                    Process.send_after(self(), :next_light, 1000)
+                    next_light_timer = Process.send_after(self(), :next_light, 1000)
                     state[:light_index] + 1
                   else
                     state[:light_index]
                   end
 
-    {:noreply, %{state | light_index: light_index}}
+    {:noreply, %{state | light_index: light_index, next_light_timer: next_light_timer}}
   end
 end

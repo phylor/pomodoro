@@ -6,7 +6,7 @@ defmodule PomodoroTimer do
   def start_link do
     Leds.start_link()
     #Music.start_link()
-    GenServer.start_link(__MODULE__, %{pomodoro_status: :reset}, name: __MODULE__)
+    GenServer.start_link(__MODULE__, %{pomodoro_status: :reset, last_click: 0}, name: __MODULE__)
     #Music.play_tone(2200, 1000)
   end
 
@@ -20,22 +20,27 @@ defmodule PomodoroTimer do
 
   def handle_cast(:button_pressed, state) do
     Logger.info("Button pressed")
+    current_click = :os.system_time(:milli_seconds)
 
-    case state[:pomodoro_status] do
-      :reset ->
-        start_working()
+    if state[:last_click] + 1000 < current_click do
+      case state[:pomodoro_status] do
+        :reset ->
+          start_working()
 
-        {:noreply, %{state | pomodoro_status: :working}}
-      #:working ->
-        #start_breaking()
+          {:noreply, %{state | pomodoro_status: :working, last_click: :os.system_time(:milli_seconds)}}
+        :working ->
+          start_breaking()
 
-        #{:noreply, %{state | pomodoro_status: :breaking}}
-      #:breaking ->
-        #start_resetting()
+          {:noreply, %{state | pomodoro_status: :breaking, last_click: :os.system_time(:milli_seconds)}}
+        #:breaking ->
+          #start_resetting()
 
-        #{:noreply, %{state | pomodoro_status: :reset}}
-      _ ->
-        {:noreply, state}
+          #{:noreply, %{state | pomodoro_status: :reset}}
+        _ ->
+          {:noreply, state}
+      end
+    else
+      {:noreply, state}
     end
   end
 
