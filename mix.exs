@@ -40,7 +40,9 @@ defmodule Pomodoro.MixProject do
       {:nerves, "~> 1.0", runtime: false},
       {:shoehorn, "~> 0.2"},
       {:nerves_init_gadget, "~> 0.3"},
-      {:nerves_network, "~> 0.3"}
+      {:nerves_network, "~> 0.3"},
+      {:elixir_ale, "~> 1.0"},
+      {:pigpiox, "~> 0.1"}
     ] ++ deps(@target)
   end
 

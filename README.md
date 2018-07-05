@@ -22,6 +22,10 @@ To start your Nerves app:
   * Install dependencies with `mix deps.get`
   * Create firmware with `mix firmware`
   * Burn to an SD card with `mix firmware.burn`
+  * Burn via SSH: `mix firmware.push my_ip_address`
+  * You can find the IP address by running on the Pi in iex: `SystemRegistry.match(:_) |> get_in([:state, :network_interface])`
+
+To see logging messages in iex: `RingLogger.attach`. To disable them: `RingLogger.detach`.
 
 ## Learn more
 
