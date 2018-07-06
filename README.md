@@ -1,5 +1,7 @@
 # Pomodoro
 
+![Permaproto](docs/permaproto.png)
+
 **TODO: Add description**
 
 ## Targets
