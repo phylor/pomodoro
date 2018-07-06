@@ -38,20 +38,23 @@ defmodule Pomodoro.MixProject do
   defp deps do
     [
       {:nerves, "~> 1.0", runtime: false},
-      {:shoehorn, "~> 0.2"},
-      {:nerves_init_gadget, "~> 0.3"},
-      {:nerves_network, "~> 0.3"},
-      {:elixir_ale, "~> 1.0"},
-      {:pigpiox, "~> 0.1"}
+      {:shoehorn, "~> 0.2"}
     ] ++ deps(@target)
   end
 
   # Specify target specific dependencies
-  defp deps("host"), do: []
+  defp deps("host") do
+    [
+      {:elixir_ale_dummy, "~> 0.1.0"}
+    ]
+  end
 
   defp deps(target) do
     [
-      {:nerves_runtime, "~> 0.4"}
+      {:nerves_runtime, "~> 0.4"},
+      {:nerves_init_gadget, "~> 0.3"},
+      {:nerves_network, "~> 0.3"},
+      {:elixir_ale, "~> 1.0"}
     ] ++ system(target)
   end
 

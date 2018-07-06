@@ -28,7 +28,10 @@ config :nerves_firmware_ssh,
   ]
 
 config :logger, level: :debug
-config :logger, backends: [RingLogger]
+
+if Mix.Project.config()[:target] != "host" do
+  config :logger, backends: [RingLogger]
+end
 
 config :nerves_network,
   regulatory_domain: "CH"

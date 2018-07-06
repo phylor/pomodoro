@@ -53,7 +53,7 @@ defmodule Leds do
   end
 
   def light_interval do
-    div(PomodoroTimer.work_interval(), 5)
+    div(Pomodoro.work_interval(), 5)
   end
 
   def handle_cast(:turn_on, state) do
