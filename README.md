@@ -1,37 +1,21 @@
 # Pomodoro
 
+A hardware pomodoro timer featuring 10 LEDs and a button. It is connected to a Raspberry Pi. The code is written in Elixir using [Nerves](http://www.nerves-project.org). The LED blinking is inspired by [a project by David Strauß](https://www.stravid.com/en/harte-tomate-a-hardware-pomodoro-timer-reporting-to-a-backend-for-storing-past-pomodori/).
+
 ![Permaproto](docs/permaproto.png)
-
-**TODO: Add description**
-
-## Targets
-
-Nerves applications produce images for hardware targets based on the
-`MIX_TARGET` environment variable. If `MIX_TARGET` is unset, `mix` builds an
-image that runs on the host (e.g., your laptop). This is useful for executing
-logic tests, running utilities, and debugging. Other targets are represented by
-a short name like `rpi3` that maps to a Nerves system image for that platform.
-All of this logic is in the generated `mix.exs` and may be customized. For more
-information about targets see:
-
-https://hexdocs.pm/nerves/targets.html#content
 
 ## Getting Started
 
-To start your Nerves app:
-  * `export MIX_TARGET=my_target` or prefix every command with
-    `MIX_TARGET=my_target`. For example, `MIX_TARGET=rpi3`
-  * Install dependencies with `mix deps.get`
-  * Create firmware with `mix firmware`
-  * Burn to an SD card with `mix firmware.burn`
-  * Burn via SSH: `mix firmware.push my_ip_address`
-  * You can find the IP address by running on the Pi in iex: `SystemRegistry.match(:_) |> get_in([:state, :network_interface])`
+- Set necessary environment variables:
 
-To see logging messages in iex: `RingLogger.attach`. To disable them: `RingLogger.detach`.
+    ```
+    export MIX_TARGET=rpi3
+    export NERVES_NETWORK_SSID=MyWifiSSID
+    export NERVES_NETWORK_PSK=MySecretPassword
+    ```
 
-## Learn more
-
-  * Official docs: https://hexdocs.pm/nerves/getting-started.html
-  * Official website: http://www.nerves-project.org/
-  * Discussion Slack elixir-lang #nerves ([Invite](https://elixir-slackin.herokuapp.com/))
-  * Source: https://github.com/nerves-project/nerves
+- Install dependencies: `mix deps.get`
+- Create firmware: `mix firmware`
+- Burn firmware to SD card: `mix firmware.burn`
+- Or push firmware via SSH: `mix firmware.push my_ip_address`. Find the Raspberry Pi's IP address by running in iex: `SystemRegistry.match(:_) |> get_in([:state, :network_interface])`
+- To see logging messages in iex: `RingLogger.attach`. To disable them: `RingLogger.detach`.
