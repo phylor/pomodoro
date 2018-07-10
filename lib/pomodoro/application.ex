@@ -14,6 +14,10 @@ defmodule Pomodoro.Application do
   @input_pin 16
 
   def start(_type, _args) do
+    if @target == "host" do
+      Logger.info("Starting web simulator..")
+      ElixirALEDummy.start(8080)
+    end
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     Pomodoro.start_link()
